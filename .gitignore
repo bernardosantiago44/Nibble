@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Xcode user-specific settings and generated files
+**/xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.hmap
+
+# Build products
+build/
+DerivedData/
+*.app
+*.ipa
+
+# Swift Package Manager build artifacts
+.build/
+.swiftpm/
