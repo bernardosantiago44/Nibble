@@ -24,6 +24,10 @@ struct JSONInputEditor: NSViewRepresentable {
         editor.setAccessibilityLabel("JSON input")
         editor.setAccessibilityIdentifier("jsonInput")
         editor.string = text
+        scrollView.verticalRulerView = JSONLineNumberRuler(scrollView: scrollView, editor: editor)
+        scrollView.hasVerticalRuler = true
+        scrollView.rulersVisible = true
+        (scrollView.verticalRulerView as? JSONLineNumberRuler)?.refresh()
         return scrollView
     }
 
@@ -31,6 +35,7 @@ struct JSONInputEditor: NSViewRepresentable {
         context.coordinator.text = $text
         guard let editor = scrollView.documentView as? NSTextView, editor.string != text else { return }
         editor.string = text
+        (scrollView.verticalRulerView as? JSONLineNumberRuler)?.refresh()
     }
 
     func makeCoordinator() -> Coordinator {
@@ -47,6 +52,7 @@ struct JSONInputEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let editor = notification.object as? NSTextView else { return }
             text.wrappedValue = editor.string
+            (editor.enclosingScrollView?.verticalRulerView as? JSONLineNumberRuler)?.refresh()
         }
     }
 }

@@ -12,7 +12,12 @@ enum JSONFormatter {
         do {
             let value = try JSONSerialization.jsonObject(with: Data(input.utf8), options: .fragmentsAllowed)
             let data = try JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .fragmentsAllowed])
-            return .success(String(decoding: data, as: UTF8.self))
+            let formatted = String(decoding: data, as: UTF8.self)
+            // Match whole keys at the start of a line, leaving colons inside strings untouched.
+            return .success(formatted.replacingOccurrences(
+                of: #"(?m)^([ \t]*"(?:[^"\\]|\\.)*") +:"#,
+                with: "$1:", options: .regularExpression
+            ))
         } catch {
             let parserError = error as NSError
             let details = parserError.userInfo[NSDebugDescriptionErrorKey] as? String

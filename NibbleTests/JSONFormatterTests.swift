@@ -17,6 +17,14 @@ final class JSONFormatterTests: XCTestCase {
         XCTAssertTrue(output.contains("\n"))
     }
 
+    func testUsesConventionalColonSpacingWithoutChangingStrings() throws {
+        let input = #"{"hello":"world","text":"keep \"quoted\" : text","nested":{"x":1}}"#
+        let output = try JSONFormatter.format(input).get()
+        XCTAssertTrue(output.contains(#""hello": "world""#))
+        XCTAssertTrue(output.contains(#""x": 1"#))
+        try assertEquivalent(input, output)
+    }
+
     func testAcceptsTopLevelScalars() throws {
         for input in [#""hello""#, "42", "true", "null"] {
             try assertEquivalent(input, JSONFormatter.format(input).get())
