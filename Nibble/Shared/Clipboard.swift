@@ -1,6 +1,6 @@
 import AppKit
 
-enum JSONClipboard {
+enum Clipboard {
     static func copy(_ text: String) -> Bool {
         guard !text.isEmpty else { return false }
         NSPasteboard.general.clearContents()

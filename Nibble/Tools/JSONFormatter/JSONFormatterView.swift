@@ -86,7 +86,7 @@ struct JSONFormatterView: View {
                 Text("Formatted JSON").font(.headline)
                 Spacer()
                 Button(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc") {
-                    copied = JSONClipboard.copy(output)
+                    copied = Clipboard.copy(output)
                 }
                 .disabled(output.isEmpty)
                 .keyboardShortcut("c", modifiers: [.command, .shift])
@@ -95,7 +95,8 @@ struct JSONFormatterView: View {
             }
             .frame(minHeight: 28)
 
-            JSONOutputView(text: output, highlightedText: highlightedOutput)
+            CodeOutputView(text: output, highlightedText: highlightedOutput,
+                           placeholder: "Formatted JSON appears here.", outputIdentifier: "jsonOutput")
 
             if !output.isEmpty {
                 Label("Valid JSON", systemImage: "checkmark.circle")
