@@ -8,14 +8,28 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var showsJSONFormatter = false
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        Group {
+            if showsJSONFormatter {
+                JSONFormatterView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigation) {
+                            Button("Developer", systemImage: "chevron.left") {
+                                showsJSONFormatter = false
+                            }
+                            .help("Return to the tool gallery")
+                            .keyboardShortcut("[", modifiers: .command)
+                        }
+                    }
+            } else {
+                ToolGalleryView {
+                    showsJSONFormatter = true
+                }
+            }
         }
-        .padding()
+        .frame(minWidth: 640, minHeight: 520)
     }
 }
 

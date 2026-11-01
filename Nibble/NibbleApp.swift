@@ -13,5 +13,6 @@ struct NibbleApp: App {
         WindowGroup {
             ContentView()
         }
+        .defaultSize(width: 860, height: 680)
     }
 }
