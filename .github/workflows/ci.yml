@@ -23,6 +23,7 @@ jobs:
           -scheme Nibble
           -destination 'platform=macOS'
           -only-testing:NibbleTests
+          CODE_SIGNING_ALLOWED=NO
 
   integration-tests:
     name: Integration tests
@@ -37,3 +38,4 @@ jobs:
           -scheme Nibble
           -destination 'platform=macOS'
           -only-testing:NibbleUITests
+          CODE_SIGNING_ALLOWED=NO
