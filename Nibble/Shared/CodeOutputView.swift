@@ -1,9 +1,18 @@
 import SwiftUI
 
-struct JSONOutputView: View {
+struct CodeOutputView: View {
     let text: String
-    let highlightedText: AttributedString
+    let highlightedText: AttributedString?
+    let placeholder: String
+    let outputIdentifier: String
     @State private var scrollOffset: CGFloat = 0
+
+    init(text: String, highlightedText: AttributedString? = nil, placeholder: String, outputIdentifier: String) {
+        self.text = text
+        self.highlightedText = highlightedText
+        self.placeholder = placeholder
+        self.outputIdentifier = outputIdentifier
+    }
 
     private var lineCount: Int {
         text.isEmpty ? 1 : text.reduce(1) { $1 == "\n" ? $0 + 1 : $0 }
@@ -32,13 +41,13 @@ struct JSONOutputView: View {
                 ScrollView([.horizontal, .vertical]) {
                     Group {
                         if text.isEmpty {
-                            Text("Formatted JSON appears here.")
+                            Text(placeholder)
                                 .foregroundStyle(.secondary)
                         } else {
-                            Text(highlightedText)
+                            Text(highlightedText ?? AttributedString(text))
                                 .font(.system(.body, design: .monospaced))
                                 .textSelection(.enabled)
-                                .accessibilityIdentifier("jsonOutput")
+                                .accessibilityIdentifier(outputIdentifier)
                         }
                     }
                     .padding(8)

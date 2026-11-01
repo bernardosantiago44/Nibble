@@ -1,31 +1,27 @@
-//
-//  ContentView.swift
-//  Nibble
-//
-//  Created by Bernardo Santiago Marin on 31/10/26.
-//
-
 import SwiftUI
 
 struct ContentView: View {
-    @State private var showsJSONFormatter = false
+    @State private var selectedTool: ToolDestination?
 
     var body: some View {
         Group {
-            if showsJSONFormatter {
+            switch selectedTool {
+            case .jsonFormatter:
                 JSONFormatterView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigation) {
-                            Button("Developer", systemImage: "chevron.left") {
-                                showsJSONFormatter = false
-                            }
-                            .help("Return to the tool gallery")
-                            .keyboardShortcut("[", modifiers: .command)
-                        }
+            case .uuidGenerator:
+                UUIDGeneratorView()
+            case nil:
+                ToolGalleryView { selectedTool = $0 }
+            }
+        }
+        .toolbar {
+            if selectedTool != nil {
+                ToolbarItem(placement: .navigation) {
+                    Button("Developer", systemImage: "chevron.left") {
+                        selectedTool = nil
                     }
-            } else {
-                ToolGalleryView {
-                    showsJSONFormatter = true
+                    .help("Return to the tool gallery")
+                    .keyboardShortcut("[", modifiers: .command)
                 }
             }
         }
