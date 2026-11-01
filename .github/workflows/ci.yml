@@ -1,0 +1,41 @@
+name: macOS CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run unit tests
+        run: >-
+          xcodebuild test
+          -project Nibble.xcodeproj
+          -scheme Nibble
+          -destination 'platform=macOS'
+          -only-testing:NibbleTests
+          CODE_SIGNING_ALLOWED=NO
+
+  integration-tests:
+    name: Integration tests
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run UI integration tests
+        run: >-
+          xcodebuild test
+          -project Nibble.xcodeproj
+          -scheme Nibble
+          -destination 'platform=macOS'
+          -only-testing:NibbleUITests
+          CODE_SIGNING_ALLOWED=NO
