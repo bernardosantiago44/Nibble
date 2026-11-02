@@ -116,6 +116,36 @@ final class JSONFormatterTests: XCTestCase {
         }
     }
 
+    func testSortsNestedKeysWhilePreservingArraysAndLiteralValues() throws {
+        let input = #"{"z":[{"z":1.2300E+04,"a":"keep \"z\": [2,1]"},3,2,1],"a":{"z":null,"a":false},"n":-0.0000}"#
+        let expected = #"{"a":{"a":false,"z":null},"n":-0.0000,"z":[{"a":"keep \"z\": [2,1]","z":1.2300E+04},3,2,1]}"#
+        for indentation in JSONIndentation.allCases {
+            XCTAssertEqual(try JSONFormatter.format(input, indentation: indentation, sortKeys: true).get(),
+                           try JSONFormatter.format(expected, indentation: indentation).get())
+        }
+    }
+
+    func testSortingIsOptIn() throws {
+        let input = #"{"z":1,"a":{"z":2,"a":3}}"#
+        XCTAssertEqual(try JSONFormatter.format(input).get(),
+                       try JSONFormatter.format(input, sortKeys: false).get())
+        XCTAssertEqual(try JSONFormatter.format(input).get().filter { !$0.isWhitespace }, input)
+    }
+
+    func testSortUsesDecodedKeysAndPreservesDuplicateKeys() throws {
+        let input = #"{"z":[],"\u0061":1,"a":2,"b":{}}"#
+        let expected = #"{"\u0061":1,"a":2,"b":{},"z":[]}"#
+        XCTAssertEqual(try JSONFormatter.format(input, sortKeys: true).get(),
+                       try JSONFormatter.format(expected).get())
+    }
+
+    func testSortingHandlesScalarsEmptyContainersAndTrailingCommas() throws {
+        for input in ["null", "true", "1e400", #""text""#, "{}", "[]", #"[{"z":1,"a":2,},]"#] {
+            let output = try JSONFormatter.format(input, sortKeys: true).get()
+            XCTAssertEqual(try JSONFormatter.format(output, sortKeys: true).get(), output)
+        }
+    }
+
     private func assertEquivalent(_ input: String, _ output: String) throws {
         let original = try JSONSerialization.jsonObject(with: Data(input.utf8), options: .fragmentsAllowed)
         let formatted = try JSONSerialization.jsonObject(with: Data(output.utf8), options: .fragmentsAllowed)

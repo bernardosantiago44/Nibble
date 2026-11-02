@@ -1,7 +1,7 @@
 import Foundation
 
 enum JSONFormatter {
-    nonisolated static func format(_ input: String, indentation: JSONIndentation = .twoSpaces) -> Result<String, NSError> {
+    nonisolated static func format(_ input: String, indentation: JSONIndentation = .twoSpaces, sortKeys: Bool = false) -> Result<String, NSError> {
         guard !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .failure(NSError(
                 domain: "JSONFormatter", code: 1,
@@ -38,7 +38,9 @@ enum JSONFormatter {
                 throw error
             }
             let content = tokens.filter { !$0.isWhitespace }.map(\.text)
-            return .success(prettyPrinted(content, indentation: indentation.whitespace))
+            var index = 0
+            let ordered = sortKeys ? try sortedValue(content, index: &index) : content
+            return .success(prettyPrinted(ordered, indentation: indentation.whitespace))
         } catch {
             let parserError = error as NSError
             let details = parserError.userInfo[NSDebugDescriptionErrorKey] as? String
@@ -48,6 +50,54 @@ enum JSONFormatter {
                 userInfo: [NSLocalizedDescriptionKey: "Invalid JSON. \(details)"]
             ))
         }
+    }
+
+    // Reorder original token slices instead of serializing parsed values, preserving
+    // numeric spelling, string escapes, and duplicate keys exactly as entered.
+    nonisolated private static func sortedValue(_ tokens: [String], index: inout Int) throws -> [String] {
+        let opening = tokens[index]
+        if opening == "{" {
+            index += 1
+            var members: [(key: String, tokens: [String])] = []
+            while tokens[index] != "}" {
+                let keyToken = tokens[index]
+                let key = try JSONSerialization.jsonObject(
+                    with: Data(keyToken.utf8), options: .fragmentsAllowed
+                ) as? String ?? keyToken
+                index += 2 // The validated key and colon.
+                let value = try sortedValue(tokens, index: &index)
+                members.append((key, [keyToken, ":"] + value))
+                if tokens[index] == "," { index += 1 }
+            }
+            index += 1
+            // Use Unicode scalar order, independent of the Mac's locale. Keep equal
+            // decoded keys in input order, including differently escaped spellings.
+            let ordered = members.enumerated().sorted {
+                if $0.element.key.unicodeScalars.elementsEqual($1.element.key.unicodeScalars) {
+                    return $0.offset < $1.offset
+                }
+                return $0.element.key.unicodeScalars.lexicographicallyPrecedes($1.element.key.unicodeScalars)
+            }
+            return ["{"] + ordered.enumerated().flatMap {
+                ($0.offset == 0 ? [] : [","]) + $0.element.element.tokens
+            } + ["}"]
+        }
+        if opening == "[" {
+            index += 1
+            var result = ["["]
+            while tokens[index] != "]" {
+                if result.count > 1 { result.append(",") }
+                result += try sortedValue(tokens, index: &index)
+                if tokens[index] == "," { index += 1 }
+            }
+            index += 1
+            return result + ["]"]
+        }
+        let start = index
+        while index < tokens.count, ![",", "}", "]"].contains(tokens[index]) {
+            index += 1
+        }
+        return Array(tokens[start..<index])
     }
 
     nonisolated private static func prettyPrinted(_ tokens: [String], indentation: String) -> String {
