@@ -6,6 +6,7 @@ struct JSONFormatterView: View {
     @State private var highlightedOutput = AttributedString()
     @State private var errorMessage: String?
     @State private var copied = false
+    @State private var sortKeys = false
     @State private var indentation = JSONIndentation.twoSpaces
 
     var body: some View {
@@ -15,6 +16,10 @@ struct JSONFormatterView: View {
                     .font(.title.bold())
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
+                Toggle("Sort keys", isOn: $sortKeys)
+                    .toggleStyle(.checkbox)
+                    .help("Sort object keys the next time you format JSON.")
+                    .accessibilityIdentifier("sortJSONKeys")
                 Picker("Indentation", selection: $indentation) {
                     ForEach(JSONIndentation.allCases) { option in
                         Text(option.title).tag(option)
@@ -122,7 +127,7 @@ struct JSONFormatterView: View {
 
     private func format() {
         copied = false
-        switch JSONFormatter.format(input, indentation: indentation) {
+        switch JSONFormatter.format(input, indentation: indentation, sortKeys: sortKeys) {
         case .success(let formatted):
             output = formatted
             highlightedOutput = JSONSyntaxHighlighter.highlight(formatted)
