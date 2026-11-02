@@ -3,6 +3,41 @@ import XCTest
 @testable import Nibble
 
 final class JSONFormatterTests: XCTestCase {
+    func testPreservesExactNumericLiteralsAcrossIndentationChoices() throws {
+        let input = "[8.95,22.99,19.95,0.123456789012345678901234567890123456789,9007199254740993,12345678901234567890123456789012345678901234567890,-0,-0.0000,1.2300,1.2300E+04,1e400,1e-400]"
+        for indentation in JSONIndentation.allCases {
+            let output = try JSONFormatter.format(input, indentation: indentation).get()
+            XCTAssertEqual(output.filter { !$0.isWhitespace }, input)
+        }
+        for number in ["8.95", "22.99", "19.95", "-0.00", "1.2300E+04", "1e400", "1e-400"] {
+            XCTAssertEqual(try JSONFormatter.format(number).get(), number)
+        }
+    }
+
+    func testPreservesNumbersBesideEscapedStringsAndEmptyContainers() throws {
+        let input = #"{"price":8.95,"description":"8.95, \"price\": 22.99, [ ] { } \\ \n \t","items":[{},[],{"price":19.95}]}"#
+        let output = try JSONFormatter.format(input).get()
+        XCTAssertTrue(output.contains(#""price": 8.95"#))
+        XCTAssertTrue(output.contains(#""price": 19.95"#))
+        XCTAssertTrue(output.contains(#""description": "8.95, \"price\": 22.99, [ ] { } \\ \n \t""#))
+        XCTAssertTrue(output.contains("{}"))
+        XCTAssertTrue(output.contains("[]"))
+        try assertEquivalent(input, output)
+    }
+
+    func testRejectsMalformedNumberSyntax() {
+        for input in ["01", "-01", ".5", "1.", "1.2.3", "1e+", "--1", "-", "١", "NaN", "Infinity", "{1:2}", "[1 2]"] {
+            guard case .failure = JSONFormatter.format(input) else {
+                return XCTFail("Malformed numeric syntax must be rejected: \(input)")
+            }
+        }
+    }
+
+    func testNormalizesAcceptedTrailingCommasWithoutRoundingNumbers() throws {
+        let output = try JSONFormatter.format(#"{"prices":[8.95,22.99,],}"#).get()
+        XCTAssertEqual(output.filter { !$0.isWhitespace }, #"{"prices":[8.95,22.99]}"#)
+    }
+
     func testFormatsNestedObjectWithoutChangingValues() throws {
         let input = #"{"name":"Nibble","nested":{"enabled":true,"values":[1,null,"text"]}}"#
         let output = try JSONFormatter.format(input).get()
@@ -15,6 +50,38 @@ final class JSONFormatterTests: XCTestCase {
         let output = try JSONFormatter.format(input).get()
         try assertEquivalent(input, output)
         XCTAssertTrue(output.contains("\n"))
+    }
+
+    func testIndentationChoicesApplyAtEveryNestingLevel() throws {
+        let input = #"{"items":[{"enabled":true,"value":null}]}"#
+        for (indentation, unit) in [(JSONIndentation.twoSpaces, "  "), (.fourSpaces, "    "), (.tabs, "\t")] {
+            let output = try JSONFormatter.format(input, indentation: indentation).get()
+            try assertEquivalent(input, output)
+            let lines = output.components(separatedBy: "\n")
+            XCTAssertTrue(lines.contains(unit + #""items": ["#))
+            XCTAssertTrue(lines.contains(String(repeating: unit, count: 2) + "{"))
+            XCTAssertTrue(lines.contains { $0.hasPrefix(String(repeating: unit, count: 3) + #""enabled": true"#) })
+            XCTAssertTrue(lines.contains(String(repeating: unit, count: 2) + "}"))
+            XCTAssertTrue(lines.contains(unit + "]"))
+            XCTAssertEqual(lines.first, "{")
+            XCTAssertEqual(lines.last, "}")
+        }
+    }
+
+    func testIndentationPreservesStringWhitespaceEscapesAndScalars() throws {
+        let input = #"["  leading spaces", "line\n  next", "\tindent", {"  key": "quote\" : value"}]"#
+        for indentation in JSONIndentation.allCases {
+            try assertEquivalent(input, JSONFormatter.format(input, indentation: indentation).get())
+            for scalar in [#""  text\n\t""#, "42", "false", "null"] {
+                try assertEquivalent(scalar, JSONFormatter.format(scalar, indentation: indentation).get())
+            }
+        }
+    }
+
+    func testDefaultIndentationRemainsTwoSpaces() throws {
+        let input = #"{"nested":{"value":1}}"#
+        XCTAssertEqual(try JSONFormatter.format(input).get(),
+                       try JSONFormatter.format(input, indentation: .twoSpaces).get())
     }
 
     func testUsesConventionalColonSpacingWithoutChangingStrings() throws {
