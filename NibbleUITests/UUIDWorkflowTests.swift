@@ -5,6 +5,9 @@ final class UUIDWorkflowTests: XCTestCase {
     func testBatchOutputPersistsAcrossVersionsAndUpdatesCase() {
         continueAfterFailure = false
         let app = XCUIApplication()
+        app.launchArguments += ["-UITests", "1", "-UIAnimationsDisabled", "YES"]
+        // Optionally reduce logging noise during tests
+        app.launchEnvironment["OS_ACTIVITY_MODE"] = "disable"
         app.launch()
         let search = app.searchFields.firstMatch
         XCTAssertTrue(search.waitForExistence(timeout: 5))
