@@ -6,12 +6,25 @@ struct JSONFormatterView: View {
     @State private var highlightedOutput = AttributedString()
     @State private var errorMessage: String?
     @State private var copied = false
+    @State private var indentation = JSONIndentation.twoSpaces
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("JSON Formatter")
-                .font(.title.bold())
-                .accessibilityAddTraits(.isHeader)
+            HStack {
+                Text("JSON Formatter")
+                    .font(.title.bold())
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Picker("Indentation", selection: $indentation) {
+                    ForEach(JSONIndentation.allCases) { option in
+                        Text(option.title).tag(option)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .fixedSize()
+                .help("Used the next time you format JSON.")
+            }
 
             GeometryReader { geometry in
                 let sideBySide = geometry.size.width >= 820
@@ -109,7 +122,7 @@ struct JSONFormatterView: View {
 
     private func format() {
         copied = false
-        switch JSONFormatter.format(input) {
+        switch JSONFormatter.format(input, indentation: indentation) {
         case .success(let formatted):
             output = formatted
             highlightedOutput = JSONSyntaxHighlighter.highlight(formatted)
